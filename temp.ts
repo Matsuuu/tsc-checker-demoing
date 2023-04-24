@@ -10,4 +10,6 @@ export class MyElement extends HTMLElement {
     }
 }
 customElements.define("my-element", MyElement);
-element
+var ______element = new MyElement()
+______element.foo = "primary";
+______element.bar = "secondary";
