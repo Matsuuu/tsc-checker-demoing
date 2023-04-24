@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const typescript_1 = __importDefault(require("typescript"));
 const vfs_1 = require("@typescript/vfs");
 const compilerOptions = {
-    target: typescript_1.default.ScriptTarget.ES2021,
+    target: typescript_1.default.ScriptTarget.ESNext,
 };
 const files = ["./src/test.ts"];
 let program = typescript_1.default.createProgram(files, compilerOptions);

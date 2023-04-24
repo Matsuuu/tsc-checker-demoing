@@ -2,7 +2,7 @@ import ts from "typescript";
 import { createDefaultMapFromNodeModules, createSystem, createVirtualCompilerHost, } from "@typescript/vfs";
 
 const compilerOptions = {
-    target: ts.ScriptTarget.ES2021,
+    target: ts.ScriptTarget.ESNext,
 };
 const files = ["./src/test.ts"];
 
