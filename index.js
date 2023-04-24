@@ -1,45 +1,16 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ts = __importStar(require("typescript"));
-const fs = __importStar(require("fs"));
+const typescript_1 = __importDefault(require("typescript"));
+const vfs_1 = require("@typescript/vfs");
 const opts = {};
 const files = ["./src/test.ts"];
-let program = ts.createProgram(files, opts);
+let program = typescript_1.default.createProgram(files, opts);
 let checker = program.getTypeChecker();
-let printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-const imports = [];
+let printer = typescript_1.default.createPrinter({ newLine: typescript_1.default.NewLineKind.LineFeed });
 const sourceFile = program.getSourceFile("./src/test.ts");
-sourceFile === null || sourceFile === void 0 ? void 0 : sourceFile.forEachChild(visit);
-function visit(node) {
-    if (ts.isImportDeclaration(node)) {
-        imports.push(node);
-    }
-    node.forEachChild(visit);
-}
-// console.log(imports);
 addExtraCode();
 function addExtraCode() {
     if (!sourceFile)
@@ -47,36 +18,48 @@ function addExtraCode() {
     const className = "MyElement";
     const properties = {
         "foo": "primary",
-        "bar": "secondary"
+        "bar": "foo"
     };
     // Create " var _____element = new MyElement()"
     //
     const tempElementName = "______element";
     const elementDeclaration = createElementDeclaration(className, tempElementName);
     const propertyStatements = createPropertyBindings(properties, tempElementName);
-    const nodeArray = ts.factory.createNodeArray([
+    const nodeArray = typescript_1.default.factory.createNodeArray([
         sourceFile,
         elementDeclaration,
         ...propertyStatements
     ]);
-    let temp = printer.printList(ts.ListFormat.MultiLine, nodeArray, sourceFile);
-    console.log(temp);
-    fs.writeFileSync("./temp.ts", temp, "utf-8");
+    let tempFileContent = printer.printList(typescript_1.default.ListFormat.MultiLine, nodeArray, sourceFile);
+    console.log(tempFileContent);
+    const virtualTempFileName = "temp.ts";
+    const fsMap = new Map();
+    //fsMap.set(virtualTempFileName, tempFileContent);
+    fsMap.set(virtualTempFileName, "console.log('foo');");
+    const system = (0, vfs_1.createSystem)(fsMap);
+    const host = (0, vfs_1.createVirtualCompilerHost)(system, {}, typescript_1.default);
+    const typeCheckProgram = typescript_1.default.createProgram({
+        rootNames: [...fsMap.keys()],
+        options: {},
+        host: host.compilerHost
+    });
+    const emitResult = typeCheckProgram.emit(typeCheckProgram.getSourceFile(virtualTempFileName));
+    console.log("EMIT: ", emitResult);
 }
 function createElementDeclaration(className, tempElementName) {
-    const variableDeclaration = ts.factory.createVariableDeclaration(tempElementName, undefined, undefined, ts.factory.createNewExpression(ts.factory.createIdentifier(className), [], []));
-    const variableDeclarationList = ts.factory.createVariableDeclarationList([variableDeclaration]);
+    const variableDeclaration = typescript_1.default.factory.createVariableDeclaration(tempElementName, undefined, undefined, typescript_1.default.factory.createNewExpression(typescript_1.default.factory.createIdentifier(className), [], []));
+    const variableDeclarationList = typescript_1.default.factory.createVariableDeclarationList([variableDeclaration]);
     return variableDeclarationList;
 }
 function createPropertyBindings(properties, tempElementName) {
-    const tempElementIdentifier = ts.factory.createIdentifier(tempElementName);
+    const tempElementIdentifier = typescript_1.default.factory.createIdentifier(tempElementName);
     // Create propertySetters
     return Object.entries(properties).map(propEntry => {
-        const left = ts.factory.createPropertyAccessExpression(tempElementIdentifier, propEntry[0]);
+        const left = typescript_1.default.factory.createPropertyAccessExpression(tempElementIdentifier, propEntry[0]);
         // TODO: Map this to be dynamic, not just string literal
-        const right = ts.factory.createStringLiteral(propEntry[1]);
-        const propertyExpression = ts.factory.createBinaryExpression(left, ts.SyntaxKind.EqualsToken, right);
-        const expressionStatement = ts.factory.createExpressionStatement(propertyExpression);
+        const right = typescript_1.default.factory.createStringLiteral(propEntry[1]);
+        const propertyExpression = typescript_1.default.factory.createBinaryExpression(left, typescript_1.default.SyntaxKind.EqualsToken, right);
+        const expressionStatement = typescript_1.default.factory.createExpressionStatement(propertyExpression);
         return expressionStatement;
     });
 }

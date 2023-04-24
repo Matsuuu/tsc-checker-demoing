@@ -1,4 +1,5 @@
-import * as ts from "typescript";
+import ts from "typescript";
+import { createSystem, createVirtualCompilerHost } from "@typescript/vfs";
 import * as fs from "fs";
 
 const opts: ts.CompilerOptions = {};
@@ -9,21 +10,7 @@ let program = ts.createProgram(files, opts);
 let checker = program.getTypeChecker();
 let printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
-
-const imports: ts.ImportDeclaration[] = [];
-
 const sourceFile = program.getSourceFile("./src/test.ts");
-sourceFile?.forEachChild(visit);
-
-function visit(node: ts.Node) {
-    if (ts.isImportDeclaration(node)) {
-        imports.push(node);
-    }
-
-    node.forEachChild(visit);
-}
-
-// console.log(imports);
 
 addExtraCode();
 
@@ -33,7 +20,7 @@ function addExtraCode() {
     const className = "MyElement";
     const properties = {
         "foo": "primary",
-        "bar": "secondary"
+        "bar": "foo"
     };
 
     // Create " var _____element = new MyElement()"
@@ -50,14 +37,32 @@ function addExtraCode() {
         ...propertyStatements
     ]);
 
-    let temp = printer.printList(
+    let tempFileContent = printer.printList(
         ts.ListFormat.MultiLine,
         nodeArray,
         sourceFile
     );
 
-    console.log(temp)
-    fs.writeFileSync("./temp.ts", temp, "utf-8");
+    console.log(tempFileContent)
+
+    const virtualTempFileName = "temp.ts";
+
+    const fsMap = new Map<string, string>();
+    //fsMap.set(virtualTempFileName, tempFileContent);
+    fsMap.set(virtualTempFileName, "console.log('foo');");
+
+    const system = createSystem(fsMap);
+    const host = createVirtualCompilerHost(system, {}, ts);
+
+    const typeCheckProgram = ts.createProgram({
+        rootNames: [...fsMap.keys()],
+        options: {},
+        host: host.compilerHost
+    });
+
+    const emitResult = typeCheckProgram.emit(typeCheckProgram.getSourceFile(virtualTempFileName));
+
+    console.log("EMIT: ", emitResult)
 }
 
 function createElementDeclaration(className: string, tempElementName: string) {
