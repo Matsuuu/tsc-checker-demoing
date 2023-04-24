@@ -36,33 +36,18 @@ function addExtraCode() {
         "bar": "secondary"
     };
 
-    const tempElementName = "______element";
     // Create " var _____element = new MyElement()"
-    const variableDeclaration = ts.factory.createVariableDeclaration(
-        tempElementName,
-        undefined,
-        undefined,
-        ts.factory.createNewExpression(ts.factory.createIdentifier(className), [], [])
-    );
-    const variableDeclarationList = ts.factory.createVariableDeclarationList([variableDeclaration]);
     //
 
-    const tempElementIdentifier = ts.factory.createIdentifier(tempElementName);
+    const tempElementName = "______element";
+    const elementDeclaration = createElementDeclaration(className, tempElementName);
 
-    // Create propertySetters
-    const propertyStatementNodes = Object.entries(properties).map(propEntry => {
-        const left = ts.factory.createPropertyAccessExpression(tempElementIdentifier, propEntry[0]);
-
-        const right = ts.factory.createStringLiteral(propEntry[1]);
-        const propertyExpression = ts.factory.createBinaryExpression(left, ts.SyntaxKind.EqualsToken, right);
-        const expressionStatement = ts.factory.createExpressionStatement(propertyExpression);
-        return expressionStatement;
-    });
+    const propertyStatements = createPropertyBindings(properties, tempElementName);
 
     const nodeArray = ts.factory.createNodeArray([
         sourceFile,
-        variableDeclarationList,
-        ...propertyStatementNodes
+        elementDeclaration,
+        ...propertyStatements
     ]);
 
     let temp = printer.printList(
@@ -73,5 +58,30 @@ function addExtraCode() {
 
     console.log(temp)
     fs.writeFileSync("./temp.ts", temp, "utf-8");
+}
+
+function createElementDeclaration(className: string, tempElementName: string) {
+    const variableDeclaration = ts.factory.createVariableDeclaration(
+        tempElementName,
+        undefined,
+        undefined,
+        ts.factory.createNewExpression(ts.factory.createIdentifier(className), [], [])
+    );
+    const variableDeclarationList = ts.factory.createVariableDeclarationList([variableDeclaration]);
+    return variableDeclarationList;
+}
+
+function createPropertyBindings(properties: Record<string, string>, tempElementName: string) {
+    const tempElementIdentifier = ts.factory.createIdentifier(tempElementName);
+    // Create propertySetters
+    return Object.entries(properties).map(propEntry => {
+        const left = ts.factory.createPropertyAccessExpression(tempElementIdentifier, propEntry[0]);
+
+        // TODO: Map this to be dynamic, not just string literal
+        const right = ts.factory.createStringLiteral(propEntry[1]);
+        const propertyExpression = ts.factory.createBinaryExpression(left, ts.SyntaxKind.EqualsToken, right);
+        const expressionStatement = ts.factory.createExpressionStatement(propertyExpression);
+        return expressionStatement;
+    });
 }
 

@@ -49,28 +49,34 @@ function addExtraCode() {
         "foo": "primary",
         "bar": "secondary"
     };
-    const tempElementName = "______element";
     // Create " var _____element = new MyElement()"
-    const initializerExpression = ts.factory.createIdentifier(className);
-    const initializer = ts.factory.createNewExpression(initializerExpression, [], []);
-    const variableDeclaration = ts.factory.createVariableDeclaration(tempElementName, undefined, undefined, initializer);
-    const variableDeclarationList = ts.factory.createVariableDeclarationList([variableDeclaration]);
     //
+    const tempElementName = "______element";
+    const elementDeclaration = createElementDeclaration(className, tempElementName);
+    const propertyStatements = createPropertyBindings(properties, tempElementName);
+    const nodeArray = ts.factory.createNodeArray([
+        sourceFile,
+        elementDeclaration,
+        ...propertyStatements
+    ]);
+    let temp = printer.printList(ts.ListFormat.MultiLine, nodeArray, sourceFile);
+    console.log(temp);
+    fs.writeFileSync("./temp.ts", temp, "utf-8");
+}
+function createElementDeclaration(className, tempElementName) {
+    const variableDeclaration = ts.factory.createVariableDeclaration(tempElementName, undefined, undefined, ts.factory.createNewExpression(ts.factory.createIdentifier(className), [], []));
+    const variableDeclarationList = ts.factory.createVariableDeclarationList([variableDeclaration]);
+    return variableDeclarationList;
+}
+function createPropertyBindings(properties, tempElementName) {
     const tempElementIdentifier = ts.factory.createIdentifier(tempElementName);
     // Create propertySetters
-    const propertyStatementNodes = Object.entries(properties).map(propEntry => {
+    return Object.entries(properties).map(propEntry => {
         const left = ts.factory.createPropertyAccessExpression(tempElementIdentifier, propEntry[0]);
+        // TODO: Map this to be dynamic, not just string literal
         const right = ts.factory.createStringLiteral(propEntry[1]);
         const propertyExpression = ts.factory.createBinaryExpression(left, ts.SyntaxKind.EqualsToken, right);
         const expressionStatement = ts.factory.createExpressionStatement(propertyExpression);
         return expressionStatement;
     });
-    const nodeArray = ts.factory.createNodeArray([
-        sourceFile,
-        variableDeclarationList,
-        ...propertyStatementNodes
-    ]);
-    let temp = printer.printList(ts.ListFormat.MultiLine, nodeArray, sourceFile);
-    console.log(temp);
-    fs.writeFileSync("./temp.ts", temp, "utf-8");
 }
