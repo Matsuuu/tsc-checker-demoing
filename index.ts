@@ -1,12 +1,13 @@
 import ts from "typescript";
-import { createSystem, createVirtualCompilerHost } from "@typescript/vfs";
-import * as fs from "fs";
+import { createDefaultMapFromNodeModules, createSystem, createVirtualCompilerHost, } from "@typescript/vfs";
 
-const opts: ts.CompilerOptions = {};
+const compilerOptions = {
+    target: ts.ScriptTarget.ES2021,
+};
 const files = ["./src/test.ts"];
 
 
-let program = ts.createProgram(files, opts);
+let program = ts.createProgram(files, compilerOptions);
 let checker = program.getTypeChecker();
 let printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
@@ -14,7 +15,7 @@ const sourceFile = program.getSourceFile("./src/test.ts");
 
 addExtraCode();
 
-function addExtraCode() {
+async function addExtraCode() {
     if (!sourceFile) return;
 
     const className = "MyElement";
@@ -47,20 +48,22 @@ function addExtraCode() {
 
     const virtualTempFileName = "temp.ts";
 
-    const fsMap = new Map<string, string>();
+
+    const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
+
+    fsMap.set(virtualTempFileName, 'console.log("Foo")')
     //fsMap.set(virtualTempFileName, tempFileContent);
-    fsMap.set(virtualTempFileName, "console.log('foo');");
 
     const system = createSystem(fsMap);
-    const host = createVirtualCompilerHost(system, {}, ts);
+    const host = createVirtualCompilerHost(system, compilerOptions, ts);
 
     const typeCheckProgram = ts.createProgram({
         rootNames: [...fsMap.keys()],
-        options: {},
+        options: compilerOptions,
         host: host.compilerHost
     });
 
-    const emitResult = typeCheckProgram.emit(typeCheckProgram.getSourceFile(virtualTempFileName));
+    const emitResult = typeCheckProgram.emit();
 
     console.log("EMIT: ", emitResult)
 }
