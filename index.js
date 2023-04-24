@@ -24,13 +24,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ts = __importStar(require("typescript"));
+const fs = __importStar(require("fs"));
 const opts = {};
 const files = ["./src/test.ts"];
 let program = ts.createProgram(files, opts);
 let checker = program.getTypeChecker();
+let printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 const imports = [];
 const sourceFile = program.getSourceFile("./src/test.ts");
-console.log(sourceFile);
 sourceFile === null || sourceFile === void 0 ? void 0 : sourceFile.forEachChild(visit);
 function visit(node) {
     if (ts.isImportDeclaration(node)) {
@@ -38,4 +39,18 @@ function visit(node) {
     }
     node.forEachChild(visit);
 }
-console.log(imports);
+// console.log(imports);
+addExtraCode();
+function addExtraCode() {
+    if (!sourceFile)
+        return;
+    const tempSourceFile = ts.createSourceFile("temp.ts", "", ts.ScriptTarget.ESNext);
+    const variableDeclaration = ts.factory.createVariableDeclaration("element");
+    const nodeArray = ts.factory.createNodeArray([
+        sourceFile,
+        variableDeclaration
+    ]);
+    let temp = printer.printList(ts.ListFormat.MultiLine, nodeArray, sourceFile);
+    console.log(sourceFile.getFullText());
+    fs.writeFileSync("./temp.ts", temp, "utf-8");
+}
