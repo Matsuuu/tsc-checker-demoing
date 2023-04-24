@@ -1,14 +1,25 @@
 import * as ts from "typescript";
-import * as fs from "fs";
 
 const opts: ts.CompilerOptions = {};
-const files = ["./test.ts"];
+const files = ["./src/test.ts"];
 
 
 let program = ts.createProgram(files, opts);
 let checker = program.getTypeChecker();
 
 
-const sourceFile = program.getSourceFile("./src/test.ts");
+const imports: ts.ImportDeclaration[] = [];
 
-const importNodes = "";
+const sourceFile = program.getSourceFile("./src/test.ts");
+console.log(sourceFile)
+sourceFile?.forEachChild(visit);
+
+function visit(node: ts.Node) {
+    if (ts.isImportDeclaration(node)) {
+        imports.push(node);
+    }
+
+    node.forEachChild(visit);
+}
+
+console.log(imports);

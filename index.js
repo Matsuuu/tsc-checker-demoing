@@ -25,8 +25,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const ts = __importStar(require("typescript"));
 const opts = {};
-const files = ["./test.ts"];
+const files = ["./src/test.ts"];
 let program = ts.createProgram(files, opts);
 let checker = program.getTypeChecker();
-const sourceFile = program.getSourceFile("test.ts");
-console.log(sourceFile === null || sourceFile === void 0 ? void 0 : sourceFile.getChildren());
+const imports = [];
+const sourceFile = program.getSourceFile("./src/test.ts");
+console.log(sourceFile);
+sourceFile === null || sourceFile === void 0 ? void 0 : sourceFile.forEachChild(visit);
+function visit(node) {
+    if (ts.isImportDeclaration(node)) {
+        imports.push(node);
+    }
+    node.forEachChild(visit);
+}
+console.log(imports);
