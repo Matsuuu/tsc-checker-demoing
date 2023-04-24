@@ -1,8 +1,4 @@
-type BonusElementVariant = "declined" | "default";
-
-type ElementVariant = "primary" | "secondary";
-
-type Variant = ElementVariant | BonusElementVariant;
+import { ElementVariant, Variant } from "./interfaces";
 
 export class MyElement extends HTMLElement {
 

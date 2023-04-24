@@ -28,32 +28,5 @@ const opts = {};
 const files = ["./test.ts"];
 let program = ts.createProgram(files, opts);
 let checker = program.getTypeChecker();
-for (const sourceFile of program.getSourceFiles()) {
-    if (!sourceFile.isDeclarationFile) {
-        // Walk the tree to search for classes
-        ts.forEachChild(sourceFile, visit);
-    }
-}
-function visit(node) {
-    var _a, _b;
-    if (ts.isClassDeclaration(node)) {
-        const fooProp = node.members[0];
-        const fooType = checker.getTypeAtLocation(fooProp);
-        const fooWidened = checker.getWidenedType(fooType);
-        console.log(fooWidened);
-        // @ts-ignore
-        console.log(fooWidened.types.map(type => type.value));
-        console.log("=====");
-        const barProp = node.members[1];
-        const barType = checker.getTypeAtLocation(barProp);
-        const barWidened = checker.getWidenedType(barType);
-        console.log((_a = barProp.type) !== null && _a !== void 0 ? _a : (_b = barProp.initializer) === null || _b === void 0 ? void 0 : _b.getText());
-    }
-    if (node.getText() === "foo") {
-        // @ts-ignore
-        console.log(node.getText());
-        console.log("");
-        // console.log(checker.)
-    }
-    node.forEachChild(visit);
-}
+const sourceFile = program.getSourceFile("test.ts");
+console.log(sourceFile === null || sourceFile === void 0 ? void 0 : sourceFile.getChildren());
