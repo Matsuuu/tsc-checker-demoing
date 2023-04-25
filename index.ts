@@ -1,7 +1,7 @@
 import ts from "typescript";
 import fs from "fs";
-import { createDefaultMapFromNodeModules, createSystem, createVirtualCompilerHost, } from "@typescript/vfs";
 import path from "path";
+import { VirtualSystem, createVirtualCompilerHost } from "./src/typescript-tools/compiler-host";
 
 const compilerOptions = {
     target: ts.ScriptTarget.ESNext,
@@ -52,17 +52,21 @@ async function addExtraCode() {
     const virtualTempFileName = "temp.ts";
 
 
-    const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
-    fsMap.set(virtualTempFileName, 'console.log("Foo")')
-    //fsMap.set(virtualTempFileName, tempFileContent);
-
-    const system = createSystem(fsMap);
+    //const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
+    const system = new VirtualSystem();
     const host = createVirtualCompilerHost(system, compilerOptions, ts);
 
+    system.writeFile(virtualTempFileName, 'console.log("foo")');
+    //fsMap.set(virtualTempFileName, 'console.log("Foo")')
+    //fsMap.set(virtualTempFileName, tempFileContent);
+
+    // const system = createSystem(fsMap);
+    // const host = createVirtualCompilerHost(system, compilerOptions, ts);
+
     const typeCheckProgram = ts.createProgram({
-        rootNames: [...fsMap.keys()],
+        rootNames: [...system.files.keys()],
         options: compilerOptions,
-        host: host.compilerHost
+        host
     });
 
     const emitResult = typeCheckProgram.emit();

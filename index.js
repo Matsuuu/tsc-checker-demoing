@@ -14,8 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const typescript_1 = __importDefault(require("typescript"));
 const fs_1 = __importDefault(require("fs"));
-const vfs_1 = require("@typescript/vfs");
 const path_1 = __importDefault(require("path"));
+const compiler_host_1 = require("./src/typescript-tools/compiler-host");
 const compilerOptions = {
     target: typescript_1.default.ScriptTarget.ESNext,
     lib: ["es2021"]
@@ -48,27 +48,18 @@ function addExtraCode() {
         let tempFileContent = printer.printList(typescript_1.default.ListFormat.MultiLine, nodeArray, sourceFile);
         console.log(tempFileContent);
         const virtualTempFileName = "temp.ts";
-        let hotfixFiles = [
-            "lib.es5.d.ts",
-            "lib.decorators.d.ts",
-            "lib.decorators.legacy.d.ts",
-            "lib.dom.d.ts",
-            "lib.webworker.importscripts.d.ts",
-            "lib.scripthost.d.ts",
-            "lib.es2019.intl.d.ts"
-        ];
-        const fsMap = (0, vfs_1.createDefaultMapFromNodeModules)(compilerOptions, typescript_1.default);
-        hotfixFiles.forEach(f => {
-            fsMap.set("/" + f, loadTypescriptLibFile(f));
-        });
-        fsMap.set(virtualTempFileName, 'console.log("Foo")');
+        //const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
+        const system = new compiler_host_1.VirtualSystem();
+        const host = (0, compiler_host_1.createVirtualCompilerHost)(system, compilerOptions, typescript_1.default);
+        system.writeFile(virtualTempFileName, 'console.log("foo")');
+        //fsMap.set(virtualTempFileName, 'console.log("Foo")')
         //fsMap.set(virtualTempFileName, tempFileContent);
-        const system = (0, vfs_1.createSystem)(fsMap);
-        const host = (0, vfs_1.createVirtualCompilerHost)(system, compilerOptions, typescript_1.default);
+        // const system = createSystem(fsMap);
+        // const host = createVirtualCompilerHost(system, compilerOptions, ts);
         const typeCheckProgram = typescript_1.default.createProgram({
-            rootNames: [...fsMap.keys()],
+            rootNames: [...system.files.keys()],
             options: compilerOptions,
-            host: host.compilerHost
+            host
         });
         const emitResult = typeCheckProgram.emit();
         console.log("EMIT: ", emitResult);

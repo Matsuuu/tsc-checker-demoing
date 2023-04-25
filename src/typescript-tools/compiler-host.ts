@@ -1,5 +1,26 @@
 import ts from "typescript";
-import { getDefaultLibFileName } from "typescript";
+import path from "path";
+import fs from "fs";
+
+
+export function initializeVirtualFileSystemMap(): Map<string, string> {
+    function loadTypescriptLibFile(filename: string) {
+        const libDir = path.dirname(require.resolve("typescript"));
+        return fs.readFileSync(path.resolve(libDir, filename), "utf-8");
+    }
+    const fsMap = new Map<string, string>();
+
+    const libDirectory = path.dirname(require.resolve("typescript"));
+    const libFiles = fs.readdirSync(libDirectory);
+
+    libFiles
+        .filter(libFile => libFile.startsWith("lib") && libFile.endsWith(".d.ts"))
+        .forEach(libFile => {
+            fsMap.set("/" + libFile, loadTypescriptLibFile(libFile))
+        })
+
+    return fsMap;
+}
 
 export class VirtualSystem implements ts.System {
     args: string[] = [];
@@ -7,6 +28,10 @@ export class VirtualSystem implements ts.System {
     useCaseSensitiveFileNames: boolean = true;
 
     files: Map<string, string> = new Map();
+
+    constructor() {
+        this.files = initializeVirtualFileSystemMap()
+    }
 
     directoryExists(dirName: string): boolean {
         return [...this.files.keys()].some(path => path.startsWith(dirName));
@@ -50,9 +75,6 @@ export class VirtualSystem implements ts.System {
 
 }
 
-export interface VirtualCompilerHost extends ts.CompilerHost {
-}
-
 export function createVirtualCompilerHost(system: VirtualSystem, compilerOptions: ts.CompilerOptions, ts: typeof import("typescript")): VirtualCompilerHost {
 
     return new VirtualCompilerHost(system, compilerOptions, ts);
@@ -63,6 +85,18 @@ export class VirtualCompilerHost implements ts.CompilerHost {
     sourceFiles: Map<string, ts.SourceFile> = new Map();
 
     constructor(public system: VirtualSystem, private compilerOptions: ts.CompilerOptions, private ts: typeof import("typescript")) {
+    }
+    writeFile(fileName: string, text: string) {
+        return this.system.writeFile(fileName, text);
+    }
+    getCurrentDirectory(): string {
+        return this.system.getCurrentDirectory();
+    }
+    fileExists(fileName: string): boolean {
+        return this.system.fileExists(fileName);
+    }
+    readFile(fileName: string): string | undefined {
+        return this.system.readFile(fileName);
     }
 
     getSourceFile(fileName: string): ts.SourceFile | undefined {
