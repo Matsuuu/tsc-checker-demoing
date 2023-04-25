@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsc && node index.js"
+    "start": "tsc && node index.js",
+    "start:debug": "tsc && node --inspect-brk index.js"
   },
   "keywords": [],
   "author": "",

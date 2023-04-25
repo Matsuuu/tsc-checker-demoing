@@ -13,9 +13,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const typescript_1 = __importDefault(require("typescript"));
+const fs_1 = __importDefault(require("fs"));
 const vfs_1 = require("@typescript/vfs");
+const path_1 = __importDefault(require("path"));
 const compilerOptions = {
     target: typescript_1.default.ScriptTarget.ESNext,
+    lib: ["es2021"]
 };
 const files = ["./src/test.ts"];
 let program = typescript_1.default.createProgram(files, compilerOptions);
@@ -45,7 +48,19 @@ function addExtraCode() {
         let tempFileContent = printer.printList(typescript_1.default.ListFormat.MultiLine, nodeArray, sourceFile);
         console.log(tempFileContent);
         const virtualTempFileName = "temp.ts";
+        let hotfixFiles = [
+            "lib.es5.d.ts",
+            "lib.decorators.d.ts",
+            "lib.decorators.legacy.d.ts",
+            "lib.dom.d.ts",
+            "lib.webworker.importscripts.d.ts",
+            "lib.scripthost.d.ts"
+        ];
+        hotfixFiles = [];
         const fsMap = (0, vfs_1.createDefaultMapFromNodeModules)(compilerOptions, typescript_1.default);
+        hotfixFiles.forEach(f => {
+            fsMap.set("/" + f, loadTypescriptLibFile(f));
+        });
         fsMap.set(virtualTempFileName, 'console.log("Foo")');
         //fsMap.set(virtualTempFileName, tempFileContent);
         const system = (0, vfs_1.createSystem)(fsMap);
@@ -75,4 +90,8 @@ function createPropertyBindings(properties, tempElementName) {
         const expressionStatement = typescript_1.default.factory.createExpressionStatement(propertyExpression);
         return expressionStatement;
     });
+}
+function loadTypescriptLibFile(filename) {
+    const libDir = path_1.default.dirname(require.resolve("typescript"));
+    return fs_1.default.readFileSync(path_1.default.resolve(libDir, filename), "utf-8");
 }

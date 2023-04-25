@@ -1,8 +1,11 @@
 import ts from "typescript";
+import fs from "fs";
 import { createDefaultMapFromNodeModules, createSystem, createVirtualCompilerHost, } from "@typescript/vfs";
+import path from "path";
 
 const compilerOptions = {
     target: ts.ScriptTarget.ESNext,
+    lib: ["es2021"]
 };
 const files = ["./src/test.ts"];
 
@@ -47,10 +50,22 @@ async function addExtraCode() {
     console.log(tempFileContent)
 
     const virtualTempFileName = "temp.ts";
+    let hotfixFiles = [
+        "lib.es5.d.ts",
+        "lib.decorators.d.ts",
+        "lib.decorators.legacy.d.ts",
+        "lib.dom.d.ts",
+        "lib.webworker.importscripts.d.ts",
+        "lib.scripthost.d.ts"
+    ];
+    hotfixFiles = [];
 
 
     const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
 
+    hotfixFiles.forEach(f => {
+        fsMap.set("/" + f, loadTypescriptLibFile(f));
+    });
     fsMap.set(virtualTempFileName, 'console.log("Foo")')
     //fsMap.set(virtualTempFileName, tempFileContent);
 
@@ -93,3 +108,8 @@ function createPropertyBindings(properties: Record<string, string>, tempElementN
     });
 }
 
+
+function loadTypescriptLibFile(filename: string) {
+    const libDir = path.dirname(require.resolve("typescript"));
+    return fs.readFileSync(path.resolve(libDir, filename), "utf-8");
+}
