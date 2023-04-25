@@ -16,6 +16,7 @@ const typescript_1 = __importDefault(require("typescript"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const compiler_host_1 = require("./src/typescript-tools/compiler-host");
+const system_1 = require("./src/typescript-tools/system");
 const compilerOptions = Object.assign(Object.assign({}, typescript_1.default.getDefaultCompilerOptions()), { target: typescript_1.default.ScriptTarget.ESNext, lib: ["es2021"], moduleResolution: typescript_1.default.ModuleResolutionKind.NodeNext, module: typescript_1.default.ModuleKind.ESNext, skipLibCheck: true, skipDefaultLibCheck: true, esModuleInterop: true, strict: true });
 const files = ["./src/test.ts"];
 let program = typescript_1.default.createProgram(files, compilerOptions);
@@ -50,7 +51,7 @@ function addExtraCode() {
         console.log(tempFileContent);
         const virtualTempFileName = "/temp.ts";
         //const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
-        const system = new compiler_host_1.VirtualSystem();
+        const system = new system_1.VirtualSystem();
         const host = (0, compiler_host_1.createVirtualCompilerHost)(system, compilerOptions, typescript_1.default);
         system.writeFile(virtualTempFileName, tempFileContent);
         system.writeFile("boo.ts", `

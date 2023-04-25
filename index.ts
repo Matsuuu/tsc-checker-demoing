@@ -1,7 +1,8 @@
 import ts from "typescript";
 import fs from "fs";
 import path from "path";
-import { VirtualSystem, createVirtualCompilerHost } from "./src/typescript-tools/compiler-host";
+import { createVirtualCompilerHost } from "./src/typescript-tools/compiler-host";
+import { VirtualSystem } from "./src/typescript-tools/system";
 
 const compilerOptions: ts.CompilerOptions = {
     ...ts.getDefaultCompilerOptions(),
