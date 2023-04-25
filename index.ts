@@ -50,22 +50,9 @@ async function addExtraCode() {
     console.log(tempFileContent)
 
     const virtualTempFileName = "temp.ts";
-    let hotfixFiles = [
-        "lib.es5.d.ts",
-        "lib.decorators.d.ts",
-        "lib.decorators.legacy.d.ts",
-        "lib.dom.d.ts",
-        "lib.webworker.importscripts.d.ts",
-        "lib.scripthost.d.ts"
-    ];
-    hotfixFiles = [];
 
 
     const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
-
-    hotfixFiles.forEach(f => {
-        fsMap.set("/" + f, loadTypescriptLibFile(f));
-    });
     fsMap.set(virtualTempFileName, 'console.log("Foo")')
     //fsMap.set(virtualTempFileName, tempFileContent);
 

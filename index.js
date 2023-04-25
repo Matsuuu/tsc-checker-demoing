@@ -54,9 +54,9 @@ function addExtraCode() {
             "lib.decorators.legacy.d.ts",
             "lib.dom.d.ts",
             "lib.webworker.importscripts.d.ts",
-            "lib.scripthost.d.ts"
+            "lib.scripthost.d.ts",
+            "lib.es2019.intl.d.ts"
         ];
-        hotfixFiles = [];
         const fsMap = (0, vfs_1.createDefaultMapFromNodeModules)(compilerOptions, typescript_1.default);
         hotfixFiles.forEach(f => {
             fsMap.set("/" + f, loadTypescriptLibFile(f));
