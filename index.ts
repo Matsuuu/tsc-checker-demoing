@@ -3,9 +3,16 @@ import fs from "fs";
 import path from "path";
 import { VirtualSystem, createVirtualCompilerHost } from "./src/typescript-tools/compiler-host";
 
-const compilerOptions = {
+const compilerOptions: ts.CompilerOptions = {
+    ...ts.getDefaultCompilerOptions(),
     target: ts.ScriptTarget.ESNext,
-    lib: ["es2021"]
+    lib: ["es2021"],
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    module: ts.ModuleKind.ESNext,
+    skipLibCheck: true,
+    skipDefaultLibCheck: true,
+    esModuleInterop: true,
+    strict: true
 };
 const files = ["./src/test.ts"];
 
@@ -14,12 +21,18 @@ let program = ts.createProgram(files, compilerOptions);
 let checker = program.getTypeChecker();
 let printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
-const sourceFile = program.getSourceFile("./src/test.ts");
-
 addExtraCode();
 
+function readSourceFile(fileName: string) {
+    return fs.readFileSync("./src/" + fileName, "utf8");
+}
+
 async function addExtraCode() {
-    if (!sourceFile) return;
+    const sourceFile = program.getSourceFile("./src/test.ts");
+
+    if (!sourceFile) {
+        return;
+    }
 
     const className = "MyElement";
     const properties = {
@@ -49,19 +62,19 @@ async function addExtraCode() {
 
     console.log(tempFileContent)
 
-    const virtualTempFileName = "temp.ts";
+    const virtualTempFileName = "/temp.ts";
 
 
     //const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
     const system = new VirtualSystem();
     const host = createVirtualCompilerHost(system, compilerOptions, ts);
 
-    system.writeFile(virtualTempFileName, 'console.log("foo")');
-    //fsMap.set(virtualTempFileName, 'console.log("Foo")')
-    //fsMap.set(virtualTempFileName, tempFileContent);
-
-    // const system = createSystem(fsMap);
-    // const host = createVirtualCompilerHost(system, compilerOptions, ts);
+    system.writeFile(virtualTempFileName, tempFileContent);
+    system.writeFile("boo.ts", `
+        const foo = "bar";
+        foo = "biz";`);
+    system.writeFile("/interfaces.ts", readSourceFile("interfaces.ts"));
+    system.writeFile("/foo.ts", readSourceFile("foo.ts"));
 
     const typeCheckProgram = ts.createProgram({
         rootNames: [...system.files.keys()],
@@ -69,9 +82,9 @@ async function addExtraCode() {
         host
     });
 
-    const emitResult = typeCheckProgram.emit();
+    const diag = typeCheckProgram.getSemanticDiagnostics(host.getSourceFile(virtualTempFileName));
 
-    console.log("EMIT: ", emitResult)
+    console.log("DIAG: ", diag)
 }
 
 function createElementDeclaration(className: string, tempElementName: string) {

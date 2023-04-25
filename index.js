@@ -16,20 +16,21 @@ const typescript_1 = __importDefault(require("typescript"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const compiler_host_1 = require("./src/typescript-tools/compiler-host");
-const compilerOptions = {
-    target: typescript_1.default.ScriptTarget.ESNext,
-    lib: ["es2021"]
-};
+const compilerOptions = Object.assign(Object.assign({}, typescript_1.default.getDefaultCompilerOptions()), { target: typescript_1.default.ScriptTarget.ESNext, lib: ["es2021"], moduleResolution: typescript_1.default.ModuleResolutionKind.NodeNext, module: typescript_1.default.ModuleKind.ESNext, skipLibCheck: true, skipDefaultLibCheck: true, esModuleInterop: true, strict: true });
 const files = ["./src/test.ts"];
 let program = typescript_1.default.createProgram(files, compilerOptions);
 let checker = program.getTypeChecker();
 let printer = typescript_1.default.createPrinter({ newLine: typescript_1.default.NewLineKind.LineFeed });
-const sourceFile = program.getSourceFile("./src/test.ts");
 addExtraCode();
+function readSourceFile(fileName) {
+    return fs_1.default.readFileSync("./src/" + fileName, "utf8");
+}
 function addExtraCode() {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!sourceFile)
+        const sourceFile = program.getSourceFile("./src/test.ts");
+        if (!sourceFile) {
             return;
+        }
         const className = "MyElement";
         const properties = {
             "foo": "primary",
@@ -47,22 +48,23 @@ function addExtraCode() {
         ]);
         let tempFileContent = printer.printList(typescript_1.default.ListFormat.MultiLine, nodeArray, sourceFile);
         console.log(tempFileContent);
-        const virtualTempFileName = "temp.ts";
+        const virtualTempFileName = "/temp.ts";
         //const fsMap = createDefaultMapFromNodeModules(compilerOptions, ts);
         const system = new compiler_host_1.VirtualSystem();
         const host = (0, compiler_host_1.createVirtualCompilerHost)(system, compilerOptions, typescript_1.default);
-        system.writeFile(virtualTempFileName, 'console.log("foo")');
-        //fsMap.set(virtualTempFileName, 'console.log("Foo")')
-        //fsMap.set(virtualTempFileName, tempFileContent);
-        // const system = createSystem(fsMap);
-        // const host = createVirtualCompilerHost(system, compilerOptions, ts);
+        system.writeFile(virtualTempFileName, tempFileContent);
+        system.writeFile("boo.ts", `
+        const foo = "bar";
+        foo = "biz";`);
+        system.writeFile("/interfaces.ts", readSourceFile("interfaces.ts"));
+        system.writeFile("/foo.ts", readSourceFile("foo.ts"));
         const typeCheckProgram = typescript_1.default.createProgram({
             rootNames: [...system.files.keys()],
             options: compilerOptions,
             host
         });
-        const emitResult = typeCheckProgram.emit();
-        console.log("EMIT: ", emitResult);
+        const diag = typeCheckProgram.getSemanticDiagnostics(host.getSourceFile(virtualTempFileName));
+        console.log("DIAG: ", diag);
     });
 }
 function createElementDeclaration(className, tempElementName) {
