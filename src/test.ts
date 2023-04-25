@@ -1,5 +1,5 @@
-import { doSomething } from "./foo";
 import { ElementVariant, Variant } from "./interfaces";
+import { doSomething } from "./subfolder/foo";
 
 export class MyElement extends HTMLElement {
 

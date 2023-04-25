@@ -54,11 +54,8 @@ function addExtraCode() {
         const system = new system_1.VirtualSystem();
         const host = (0, compiler_host_1.createVirtualCompilerHost)(system, compilerOptions, typescript_1.default);
         system.writeFile(virtualTempFileName, tempFileContent);
-        system.writeFile("boo.ts", `
-        const foo = "bar";
-        foo = "biz";`);
         system.writeFile("/interfaces.ts", readSourceFile("interfaces.ts"));
-        system.writeFile("/foo.ts", readSourceFile("foo.ts"));
+        system.writeFile("/subfolder/foo.ts", readSourceFile("subfolder/foo.ts"));
         const typeCheckProgram = typescript_1.default.createProgram({
             rootNames: [...system.files.keys()],
             options: compilerOptions,
